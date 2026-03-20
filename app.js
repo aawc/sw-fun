@@ -2,12 +2,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const quoteContainer = document.getElementById('quote-text');
     const platformInfo = document.getElementById('platform-info');
 
-    // Quotes as outlined in the plan
+    // Quotes and colors for each mode
     const quotes = {
         desktop_browser: "All animals are equal, but some animals are more equal than others.",
         desktop_pwa: "Four legs good, two legs bad.",
         android_browser: "The creatures outside looked from pig to man, and from man to pig, and from pig to man again; but already it was impossible to say which was which.",
         android_pwa: "Man is the only creature that consumes without producing."
+    };
+
+    const colors = {
+        desktop_browser: "#e3f2fd", // Light Blue
+        desktop_pwa: "#e8f5e9",     // Light Green
+        android_browser: "#fff3e0", // Light Orange
+        android_pwa: "#f3e5f5"      // Light Purple
     };
 
     // Detect Platform (Simple regex check for Android in userAgent)
@@ -17,33 +24,25 @@ document.addEventListener('DOMContentLoaded', () => {
     // We check if it is running standalone via matchMedia or navigator.standalone (for iOS occasionally)
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
 
-    let currentState = '';
-    let currentPlatform = '';
-    let currentMode = '';
+    function updateUI(standalone) {
+        let currentState = '';
+        let currentMode = standalone ? 'PWA (Standalone)' : 'Browser';
+        let currentPlatform = isAndroid ? 'Android' : 'Desktop';
 
-    if (isAndroid) {
-        currentPlatform = 'Android';
-        if (isStandalone) {
-            currentState = 'android_pwa';
-            currentMode = 'PWA (Standalone)';
+        if (isAndroid) {
+            currentState = standalone ? 'android_pwa' : 'android_browser';
         } else {
-            currentState = 'android_browser';
-            currentMode = 'Browser';
+            currentState = standalone ? 'desktop_pwa' : 'desktop_browser';
         }
-    } else {
-        currentPlatform = 'Desktop';
-        if (isStandalone) {
-            currentState = 'desktop_pwa';
-            currentMode = 'PWA (Standalone)';
-        } else {
-            currentState = 'desktop_browser';
-            currentMode = 'Browser';
-        }
+
+        // Set the detected quote, info text, and background color
+        quoteContainer.textContent = `"${quotes[currentState]}"`;
+        platformInfo.textContent = `Detected Platform: ${currentPlatform} | Detected Mode: ${currentMode}`;
+        document.body.style.backgroundColor = colors[currentState];
     }
 
-    // Set the detected quote and info text
-    quoteContainer.textContent = `"${quotes[currentState]}"`;
-    platformInfo.textContent = `Detected Platform: ${currentPlatform} | Detected Mode: ${currentMode}`;
+    // Initial UI update
+    updateUI(isStandalone);
 
     // Register Service Worker for PWA functionality
     if ('serviceWorker' in navigator) {
@@ -58,13 +57,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Optional: listen to display-mode changes to update dynamically if needed
+    // Listen to display-mode changes to update dynamically
     window.matchMedia('(display-mode: standalone)').addEventListener('change', (evt) => {
-        let isNowStandalone = evt.matches;
-        let newState = isAndroid ? (isNowStandalone ? 'android_pwa' : 'android_browser') : (isNowStandalone ? 'desktop_pwa' : 'desktop_browser');
-        let newMode = isNowStandalone ? 'PWA (Standalone)' : 'Browser';
-        
-        quoteContainer.textContent = `"${quotes[newState]}"`;
-        platformInfo.textContent = `Detected Platform: ${currentPlatform} | Detected Mode: ${newMode}`;
+        updateUI(evt.matches);
     });
 });
